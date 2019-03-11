@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>IT202 project2</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous"><link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+	 crossorigin="anonymous">
+	<style>
+        .template {display: none;}
+		.content {
+			display: none;
+			margin: 1em;
+		}
+        #map {
+        height: 800px;
+        width: 100%;
+       }
+	</style>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<a class="navbar-brand" href="#">Navbar</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+    </button>
+  <div class="collapse navbar-collapse" id="navbarNav">
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" href="#About">About <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#Home">Home</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#List">List</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#Map">Map</a>
+      </li>
+    </ul>
+  </div>
+  </nav>
+    
+  <div class="content" id="About">
+    In this Web app search a specific location by their number and the location where the Grafitti was located will appear on the map and on the list records Page.
+    Developer: Michael Wiszowaty, Github Repo: https://github.com/mikewisz2/it202-project2  
+  </div>
+    
+  <div class="content" id="Home">
+      <input type="text" id="ward">
+        <select id="status">
+        <option></option>
+          <option value="Open">Open</option>
+          <option value="Completed">Completed</option>
+        </select>    
+        <button id="Search">Search</button>
+    </div>
+
+  <div class="content" id="List">
+  </div>
+    
+  <div class="content" id="Map">
+      <div id="map"></div>
+  </div>
+    
+
+      
+	<div class="template card" style="width: 18rem;">
+		<div class="card-body">
+			<h5 class="card-title"></h5>
+			<h6 class="card-subtitle"></h6>
+		</div>
+    </div>
+
+    <script>
+        var map;  
+        $(document).ready(function() { 
+            var endpoint = "https://data.cityofchicago.org/resource/cdmx-wzbz.json?";
+
+            function hideScreens() {
+              $(".content").hide();
+            }
+            
+            function createMarkers(map, data) {
+                  console.log(data);
+                  $.each(data, function(i,v) {
+      
+                  var marker = new google.maps.Marker({position: {lat: parseFloat(v.latitude), lng: parseFloat(v.longitude)}, map: map});
+
+                  var infowindow = new google.maps.InfoWindow({
+                    content: clone.html()
+                  });
+
+                  marker.addListener('click', function() {
+                    infowindow.open(map, marker);
+                  });
+
+                });
+            }
+
+            $(".nav-link").on("click", function(){
+              hideScreens();
+              var target = $(this).attr("href");
+              $(target).show();
+            });
+            
+            $("#Search").on("click", function() {
+                
+                $("#List").empty();
+
+                var ward = $("#ward").val();
+                console.log(ward);
+                var url = endpoint + "&ward=" + ward;
+                console.log(url);
+
+                var status = $("#status").val();
+                console.log(status);
+
+                if (status != "") {
+                  url = url + "&status=" + status;
+                  console.log(url);
+                }
+
+
+              $.get(url, function(response) {
+                  $("#List").empty();
+                  console.log(response);
+
+                  var data = response;
+
+                  $.each(data, function(i,v){
+
+                    var clone = $(".template").clone();
+                      
+                    var info = v.what_type_of_surface_is_the_graffiti_on_ + " " + v.creation_date + " " + v.status + " " + v.completion_date + " " + v.service_request_number + " " + v.where_is_the_graffiti_located_ + " " + v.street_address + " " + v.service_request_number;
+
+                    clone.find(".card-title").text(v.service_request_number);
+
+                    clone.find(".card-subtitle").text(v.street_address);
+
+                    if (v.violations) {
+                        
+                    } 
+                    else {
+                      clone.find(".card-text").text("")
+                    }
+
+                    clone.removeClass("template")
+
+                    $("#List").append(clone);
+                    var marker = new google.maps.Marker({position: {lat: parseFloat(v.latitude), lng: parseFloat(v.longitude)}, map: map});
+                      
+                    var infowindow = new google.maps.InfoWindow({
+                        //content: clone.html()
+                        content: info
+                    });  
+                      
+                    marker.addListener('click', function() {
+                        infowindow.open(map, marker);
+                    });  
+
+                  });
+
+              })
+
+              });
+     
+
+          });
+        
+          function initMap() {
+          // The location of Uluru
+          var chicago = {lat: 41.8781, lng: -87.6298};
+          // The map, centered at Uluru
+          map = new google.maps.Map(
+              document.getElementById('map'), {zoom: 11, center: chicago});
+
+          }
+          
+    </script>
+    <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDa4dMSOASs_iLQnhrPoQ8EZgj2Im_pZ7o&callback=initMap">
+    </script>
+  </body>
+</html>
